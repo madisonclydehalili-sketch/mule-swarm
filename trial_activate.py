@@ -206,8 +206,15 @@ if cr.status_code != 200:
 checkout_url = cr.json()["data"]["normalUrl"]
 print(f"URL: {checkout_url[:80]}", flush=True)
 
+UA_LIST = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+]
+import random as _r; chosen_ua = _r.choice(UA_LIST)
+print(f"Using UA: {chosen_ua[:60]}", flush=True)
 with SB(uc=True, headless=False, xvfb=False,
-        chromium_arg="--window-size=1920,1080 --disable-blink-features=AutomationControlled --no-sandbox") as sb:
+        chromium_arg=f"--window-size=1920,1080 --disable-blink-features=AutomationControlled --no-sandbox --user-agent={chosen_ua}") as sb:
     
     # Apply selenium-stealth to mask automation fingerprints
     try:
@@ -379,6 +386,14 @@ with SB(uc=True, headless=False, xvfb=False,
         try: sb.uc_gui_handle_captcha(); time.sleep(2)
         except: pass
         try: sb.uc_gui_click_captcha(); time.sleep(2)
+        except: pass
+        try:
+            audio_result = sb.cdp.evaluate("""(async function(){
+                var frames = document.querySelectorAll('iframe[src*="hcaptcha"]');
+                for(var f of frames){try{var doc=f.contentDocument||f.contentWindow.document;var btn=doc.querySelector('button[id*="audio"],.audio-button,[aria-label*="audio"]');if(btn){btn.click();return 'audio-clicked';}}catch(e){}}
+                return 'no-audio-btn';
+            })()""")
+            print(f"  Audio: {audio_result}", flush=True)
         except: pass
         time.sleep(3)
 
